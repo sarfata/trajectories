@@ -1,0 +1,20 @@
+[project]
+name = "viewer-api"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115,<1",
+    "uvicorn[standard]>=0.34,<1",
+    "aiosqlite>=0.20,<1",
+    "sse-starlette>=2.0,<3",
+    "sqlglot>=26,<27",
+    "trajectory-schema",
+    "python-multipart>=0.0.18",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv.sources]
+trajectory-schema = { workspace = true }

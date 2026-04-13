@@ -1,0 +1,44 @@
+{
+  "id": "traj_20260413_220756_c9a0e6cdcb09",
+  "run_id": "run_20260413_220752_94d86069efd2",
+  "task": "coding",
+  "task_id": "coding/fizzbuzz",
+  "model": "qwen/qwen3-4b-2507",
+  "harness": "trajgen@0.1.0",
+  "status": "success",
+  "started_at": 1776118075552,
+  "completed_at": 1776118076673,
+  "input": "Write a Python function called `fizzbuzz` that takes an integer n and returns a list of strings from 1 to n. For multiples of 3 use 'Fizz', for multiples of 5 use 'Buzz', for multiples of both use 'FizzBuzz', otherwise the number as string.",
+  "target": "def fizzbuzz(n):\n    result = []\n    for i in range(1, n+1):\n        if i % 15 == 0:\n            result.append('FizzBuzz')\n        elif i % 3 == 0:\n            result.append('Fizz')\n        elif i % 5 == 0:\n            result.append('Buzz')\n        else:\n            result.append(str(i))\n    return result",
+  "output": "```python\ndef fizzbuzz(n):\n    result = []\n    for i in range(1, n + 1):\n        if i % 3 == 0 and i % 5 == 0:\n            result.append(\"FizzBuzz\")\n        elif i % 3 == 0:\n            result.append(\"Fizz\")\n        elif i % 5 == 0:\n            result.append(\"Buzz\")\n        else:\n            result.append(str(i))\n    return result\n```",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Write a Python function called `fizzbuzz` that takes an integer n and returns a list of strings from 1 to n. For multiples of 3 use 'Fizz', for multiples of 5 use 'Buzz', for multiples of both use 'FizzBuzz', otherwise the number as string."
+    },
+    {
+      "role": "assistant",
+      "content": "```python\ndef fizzbuzz(n):\n    result = []\n    for i in range(1, n + 1):\n        if i % 3 == 0 and i % 5 == 0:\n            result.append(\"FizzBuzz\")\n        elif i % 3 == 0:\n            result.append(\"Fizz\")\n        elif i % 5 == 0:\n            result.append(\"Buzz\")\n        else:\n            result.append(str(i))\n    return result\n```"
+    }
+  ],
+  "events": [
+    {
+      "event": "model",
+      "timestamp": 1776118076673,
+      "role": "assistant",
+      "output": "```python\ndef fizzbuzz(n):\n    result = []\n    for i in range(1, n + 1):\n        if i % 3 == 0 and i % 5 == 0:\n            result.append(\"FizzBuzz\")\n        elif i % 3 == 0:\n            result.append(\"Fizz\")\n        elif i % 5 == 0:\n            result.append(\"Buzz\")\n        else:\n            result.append(str(i))\n    return result\n```",
+      "usage": {
+        "input_tokens": 435,
+        "output_tokens": 97,
+        "total_tokens": 532
+      }
+    }
+  ],
+  "scores": {
+    "string_match": {
+      "value": "C",
+      "answer": "```python\ndef fizzbuzz(n):\n    result = []\n    for i in range(1, n + 1):\n        if i % 3 == 0 and i % 5 == 0:\n            result.append(\"FizzBuzz\")\n        elif i % 3 == 0:\n            result.append(\"Fizz\")\n        elif i % 5 == 0:\n            result.append(\"Buzz\")\n        else:\n            result.append(str(i))\n    return result\n```",
+      "explanation": "Match against regex: 'FizzBuzz'"
+    }
+  }
+}
