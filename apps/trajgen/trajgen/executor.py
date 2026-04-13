@@ -57,6 +57,7 @@ async def run_task(
     model_url: str,
     sandbox: Sandbox,
     max_turns: int = MAX_TURNS,
+    temperature: float = 0.0,
 ) -> ExecutorResult:
     """Run a single task through the chat loop.
 
@@ -80,6 +81,7 @@ async def run_task(
                         "model": model,
                         "messages": messages,
                         "tools": TOOL_DEFINITIONS,
+                        "temperature": temperature,
                     },
                 )
                 response.raise_for_status()
