@@ -55,6 +55,7 @@ def cli(verbose: bool) -> None:
 @click.option("--out", "out_dir", default="./logs", type=click.Path(path_type=Path), help="Output directory.")
 @click.option("--concurrency", default=1, type=int, help="Parallel tasks.")
 @click.option("--epochs", default=1, type=int, help="Run each task N times (for pass@k stats).")
+@click.option("--temperature", "-t", default=0.0, type=float, help="Sampling temperature (0.0=deterministic, 0.8=creative).")
 @click.option("--no-post", is_flag=True, help="Skip POSTing to viewer API.")
 def run(
     tasks_path: Path,
@@ -64,6 +65,7 @@ def run(
     out_dir: Path,
     concurrency: int,
     epochs: int,
+    temperature: float,
     no_post: bool,
 ) -> None:
     """Run coding tasks through a local LLM and capture trajectories."""
@@ -73,13 +75,16 @@ def run(
 
     task_list = load_tasks(tasks_path)
     click.echo(f"Loaded {len(task_list)} tasks from {tasks_path}")
-    click.echo(f"Model: {model} @ {murl}")
+    click.echo(f"Model: {model} @ {murl} (temperature={temperature})")
     if epochs > 1:
         click.echo(f"Epochs: {epochs} (total runs: {len(task_list) * epochs})")
 
     run_id = _make_id("run")
     run_dir = out_dir / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
+
+    # Collect results for pass@k summary: {task_id: [bool, ...]}
+    results_by_task: dict[str, list[bool]] = {}
 
     async def process_task(task, epoch: int = 1):
         epoch_label = f" (epoch {epoch}/{epochs})" if epochs > 1 else ""
@@ -91,6 +96,7 @@ def run(
                 task_input=task.input,
                 model=model,
                 model_url=murl,
+                temperature=temperature,
                 sandbox=sandbox,
             )
 
@@ -104,7 +110,14 @@ def run(
             for name, s in scores.items():
                 click.echo(f"  Score [{name}]: {s.value} — {s.explanation}")
 
+        # Record pass/fail for summary
+        passed = any(s.value == "C" for s in scores.values()) if scores else False
+        results_by_task.setdefault(task.id, []).append(passed)
+
         # Build compact trajectory
+        task.metadata["temperature"] = temperature
+        if epochs > 1:
+            task.metadata["epoch"] = epoch
         trajectory = build_compact_trajectory(
             task, result, model=model, run_id=run_id, scores=scores,
         )
@@ -173,39 +186,25 @@ def run(
     total = len(work_items)
     click.echo(f"\nDone. {total} runs in {run_dir}")
     if epochs > 1:
-        _print_pass_at_k_summary(run_dir, task_list, epochs)
-
-
-def _print_pass_at_k_summary(run_dir: Path, task_list, epochs: int) -> None:
-    """Print pass@k summary after a multi-epoch run."""
-    import json
-    import math
-
-    click.echo("\n=== Pass@k Summary ===")
-    click.echo(f"{'Task':<30} {'Pass':>5} {'Fail':>5} {'pass@1':>8}")
-
-    for task in task_list:
-        passes = 0
-        for epoch in range(1, epochs + 1):
-            stem = f"{task.id.replace('/', '_')}_epoch{epoch}"
-            json_path = run_dir / f"{stem}.json"
-            if not json_path.exists():
-                continue
-            data = json.loads(json_path.read_text())
-            scores = data.get("scores", {})
-            # Check any scorer — "C" is pass
-            for scorer_name, score in scores.items():
-                if score.get("value") == "C":
-                    passes += 1
-                    break
-
-        n = epochs
-        c = passes
-        # pass@1 = 1 - C(n-c, 1) / C(n, 1) = c / n
-        pass_at_1 = c / n if n > 0 else 0.0
-        click.echo(f"{task.id:<30} {c:>5} {n - c:>5} {pass_at_1:>7.0%}")
-
-    click.echo()
+        click.echo(f"\n{'='*50}")
+        click.echo(f"  Pass@k Summary  (temperature={temperature}, epochs={epochs})")
+        click.echo(f"{'='*50}")
+        click.echo(f"{'Task':<30} {'Pass':>5} {'Fail':>5} {'pass@1':>8}")
+        click.echo(f"{'-'*50}")
+        total_pass = 0
+        total_runs = 0
+        for task in task_list:
+            results = results_by_task.get(task.id, [])
+            c = sum(results)
+            n = len(results)
+            total_pass += c
+            total_runs += n
+            pass_at_1 = c / n if n > 0 else 0.0
+            click.echo(f"{task.id:<30} {c:>5} {n - c:>5} {pass_at_1:>7.0%}")
+        click.echo(f"{'-'*50}")
+        overall = total_pass / total_runs if total_runs > 0 else 0.0
+        click.echo(f"{'TOTAL':<30} {total_pass:>5} {total_runs - total_pass:>5} {overall:>7.0%}")
+        click.echo()
 
 
 @cli.command()
